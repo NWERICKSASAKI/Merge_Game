@@ -1,6 +1,6 @@
 extends Area2D
 
-
+const MIN_DIST_TO_DRAG = 30
 
 var group = 0
 var level = 1
@@ -10,17 +10,18 @@ var tile_has_item = false
 var selected = false
 var generator = false
 var max_level = false
+var mouse_pos_when_was_pressed
+var has_been_dragged = false
+var item_manager # atribuido ao ser criado em MainBoard
+
 onready var sprite = $Sprite
 onready var CanMergeParticles = $CanMergeParticles
 onready var MergingParticles = $MergingParticles
 onready var svg = $svg
 onready var Tween_node = $Tween_node
-onready var get_parent = get_parent() 
-
-
 
 func _ready():
-	_set_item(0,0)
+	#_set_item(0,0)
 	CanMergeParticles.visible = true
 	CanMergeParticles.emitting = false
 	CanMergeParticles.one_shot = true
@@ -30,18 +31,8 @@ func _ready():
 	svg.visible = false
 	monitoring = true
 	input_pickable = true
-	#if (self.connect("input_event", self, "_input_event") != 0):
-	#	print("failed to connect")
 	set_process(false)
 
-
-func _merge_with(target:Object):
-	var old_ID = ID
-	_move_to(target.ID)
-	yield(get_tree().create_timer(0.20), "timeout") # sleep
-	target.MergingParticles.emitting=true
-	target._level_up()
-	_empty_this_tile(old_ID)
 
 
 func _level_up() -> void:
@@ -51,8 +42,8 @@ func _level_up() -> void:
 
 
 func _empty_this_tile(old_ID:Vector2=ID) -> void:
-	_set_item(0,0)
-	_move_to(old_ID)
+	_move_to(old_ID) # 1) move_to
+	_set_item(0,0) # 2) set_item
 
 
 func _swap_with(target) -> void:
@@ -61,9 +52,10 @@ func _swap_with(target) -> void:
 	if targetID != this_ID:
 		_move_to(targetID)
 		target._move_to(this_ID)
+		item_manager._update_item_list(self,target)
+		item_manager._update_itens_in_empty_list_after_swap(self,target)
 	else: #soltar na mesma posição
 		_move_to(ID)
-	get_parent()._update_item_list(self,target)
 	return
 
 
@@ -73,7 +65,16 @@ func _sell():
 
 
 func _generate():
-	pass
+	if item_manager.empty_itens_list:
+		var empty_ID = item_manager._get_nearest_empty_tile(ID)
+		var x = empty_ID[0]
+		var y = empty_ID[1]
+		var item = item_manager.item_list[x][y]
+		var final_pos = _ID_to_global_position(ID)
+		item._set_item(group,0,false)
+		item._move_to(item.ID,final_pos)
+	else:
+		print("SEM ESPAÇO DISPONÍVEL")
 
 
 func _set_item(new_group:int, new_level:int, new_generator:bool=false) -> void:
@@ -81,9 +82,16 @@ func _set_item(new_group:int, new_level:int, new_generator:bool=false) -> void:
 	level = new_level
 	generator = new_generator
 	
-	var bool_group = new_group > 0
-	tile_has_item = bool_group
-	svg.visible = bool_group
+	var b  = new_group > 0 # true se tem grupo
+	tile_has_item = b
+	svg.visible = b
+	if b: # item novo / atualização
+		if item_manager.empty_itens_list.find(ID) != -1:
+			item_manager.empty_itens_list.erase(ID)
+		else:
+			print('espaço vazio nao encontrado',ID,item_manager.empty_itens_list)
+	else: # for item vazio
+		item_manager.empty_itens_list.append(ID)
 	#sprite.visible = true
 	_update_img()
 
@@ -103,19 +111,22 @@ func _update_img():
 		return false
 
 
-
-func _unhandled_input(event):
-	#print("event",event)
-	pass
-
-
 func _can_merge(target:Object) -> bool:
 	if target.ID == ID:
 		return false
-	elif (target.group == group and target.level == level):
+	elif (target.group == group and target.level == level and target.generator == generator):
 		return true
 	else:
 		return false
+
+
+func _merge_with(target:Object):
+	var old_ID = ID
+	_move_to(target.ID)
+	yield(get_tree().create_timer(0.20), "timeout") # sleep
+	target.MergingParticles.emitting=true
+	target._level_up()
+	_empty_this_tile(old_ID)
 
 
 func _mousepos_to_ID(mouse_pos:Vector2) -> Vector2:
@@ -124,16 +135,16 @@ func _mousepos_to_ID(mouse_pos:Vector2) -> Vector2:
 	return Vector2(nx,ny)
 
 
-func _get_tile_global_position(tile_Vector2:Vector2)->Vector2:
+func _ID_to_global_position(tile_Vector2:Vector2)->Vector2:
 	var nx = Global.CELL_SIZE * tile_Vector2.x
 	var ny = Global.CELL_SIZE * tile_Vector2.y
 	return Vector2(nx,ny)
 
 
-func _move_to(tile_Vector2:Vector2) -> void:
-	ID = tile_Vector2
-	var new_global_position = _get_tile_global_position(tile_Vector2) - get_parent().position
-	Tween_node.interpolate_property(self,"position",global_position, new_global_position, 0.15, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+func _move_to(to_ID:Vector2, from_this_pos:Vector2=global_position) -> void:
+	ID = to_ID
+	var new_global_position = _ID_to_global_position(to_ID) - get_parent().position
+	Tween_node.interpolate_property(self,"position",from_this_pos, new_global_position, 0.15, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
 	Tween_node.start()
 
 ##################################################################
@@ -141,13 +152,21 @@ func _move_to(tile_Vector2:Vector2) -> void:
 func _input_event(viewport, event, shape_idx):
 	if event is InputEventMouseButton:
 		if event.pressed:
-			print("clicked")
+			if !dragging:
+				mouse_pos_when_was_pressed = get_global_mouse_position()
+			item_manager.selected_item_ID = ID
 			dragging = true
 			set_process(true)
+			var selected = item_manager.selected_item_ID
+
 			
 			# TODO - item pickado esteja sempre na frente de todos
-		elif not event.pressed:
+		elif not event.pressed and item_manager.selected_item_ID == ID:
+			has_been_dragged = false
 			dragging = false
+			if global_position == _ID_to_global_position(ID):
+				if generator:
+					_generate()
 	get_tree().set_input_as_handled()
 
 
@@ -156,12 +175,16 @@ func _process(delta):
 		var mouse_pos = get_global_mouse_position()
 		var g_positon = mouse_pos# - Vector2( Global.CELL_SIZE/2 , Global.CELL_SIZE/2 )
 		var tile_above_index = _mousepos_to_ID(g_positon)
-		var target = get_parent()._get_item(tile_above_index)
+		var target = item_manager._get_item(tile_above_index)
 		if dragging:
-			global_position = g_positon - Vector2( Global.CELL_SIZE/2 , Global.CELL_SIZE/2 )
-			if target:
-				if _can_merge(target):
-					target.CanMergeParticles.emitting = true
+			if has_been_dragged == false:
+				if get_global_mouse_position().distance_to(mouse_pos_when_was_pressed) >= MIN_DIST_TO_DRAG:
+					has_been_dragged = true
+			else:
+				global_position = g_positon - Vector2( Global.CELL_SIZE/2 , Global.CELL_SIZE/2 )
+				if target:
+					if _can_merge(target):
+						target.CanMergeParticles.emitting = true
 		else:
 			set_process(false)
 			if _can_merge(target):

@@ -8,6 +8,16 @@
 
 config_version=4
 
+_global_script_classes=[ {
+"base": "Reference",
+"class": "Item_Manager",
+"language": "GDScript",
+"path": "res://scripts/Item_Manager.gd"
+} ]
+_global_script_class_icons={
+"Item_Manager": ""
+}
+
 [application]
 
 config/name="Merge Game"

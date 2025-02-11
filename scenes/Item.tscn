@@ -79,6 +79,7 @@ width = 4
 script = ExtResource( 2 )
 
 [node name="CanMergeParticles" type="Particles2D" parent="."]
+visible = false
 material = SubResource( 3 )
 position = Vector2( 35, 35 )
 amount = 1024
@@ -95,7 +96,6 @@ shape = SubResource( 1 )
 one_way_collision_margin = 0.0
 
 [node name="svg" type="Sprite" parent="."]
-visible = false
 scale = Vector2( 0.11, 0.11 )
 texture = ExtResource( 3 )
 centered = false

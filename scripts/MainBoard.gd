@@ -1,31 +1,37 @@
 extends Node2D
 
 var item_scene = preload("res://scenes/Item.tscn")  # Carrega a peça
-onready var ItensBoard = $ItensBoard
-onready var ColorGrid = $ColorGrid
 var TILES_X = Global.TILES_X
 var TILES_Y = Global.TILES_Y
 var CELL_SIZE = Global.CELL_SIZE
 
+onready var ItensBoard = $ItensBoard
+onready var ColorGrid = $ColorGrid
+onready var item_manager = Item_Manager.new()
+
 func _ready():
 	_create_grid()
 
-
 func _create_grid():
 	for x in range(TILES_X):
-		ItensBoard.item_list.append([])
+		item_manager.item_list.append([])
 		for y in range(TILES_Y):
-			ItensBoard.item_list[x].append([])
+			item_manager.item_list[x].append([])
 			var item = item_scene.instance()
-			ItensBoard.add_child(item)
-			item.position = Vector2(x * CELL_SIZE, y * CELL_SIZE)
-			item.ID = Vector2(x,y)
-			_generate_rand_itens(item,x,y)
-			ItensBoard.item_list[x][y]=item
+			_place_itens_in_grid(item,x,y)
+			_load_itens_in_board(item,x,y)
 			_draw_cell_grid(x,y)
 
 
-func _generate_rand_itens(item,x,y):
+func _place_itens_in_grid(item,x,y):
+	ItensBoard.add_child(item)
+	item.position = Vector2(x * CELL_SIZE, y * CELL_SIZE)
+	item.ID = Vector2(x,y)
+	item.item_manager = item_manager
+	item_manager.item_list[x][y]=item
+
+
+func _load_itens_in_board(item,x,y):
 	#item.get_node("Sprite").visible = false
 	#item.get_node("svg").visible = true
 	#var r = randi() % 3 
