@@ -6,11 +6,15 @@ var TILES_Y = Global.TILES_Y
 var CELL_SIZE = Global.CELL_SIZE
 
 onready var ItensBoard = $ItensBoard
-onready var ColorGrid = $ColorGrid
+onready var ColorGrid = $ItensBoard/ColorGrid
 onready var item_manager = Item_Manager.new()
+onready var player_manager = Player_Manager.new()
 
 func _ready():
 	_create_grid()
+	$ItensBoard.position.x = Global.left_margin_board
+	$ItensBoard.position.y = Global.upper_margin_board
+	$cheat_input.item_manager = item_manager
 
 func _create_grid():
 	for x in range(TILES_X):

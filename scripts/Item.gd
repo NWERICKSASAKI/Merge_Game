@@ -130,8 +130,8 @@ func _merge_with(target:Object):
 
 
 func _mousepos_to_ID(mouse_pos:Vector2) -> Vector2:
-	var nx = int((mouse_pos.x)/Global.CELL_SIZE)
-	var ny = int((mouse_pos.y)/Global.CELL_SIZE)
+	var nx = int((mouse_pos.x - Global.left_margin_board)/Global.CELL_SIZE)
+	var ny = int((mouse_pos.y- Global.upper_margin_board)/Global.CELL_SIZE)
 	return Vector2(nx,ny)
 
 
@@ -141,9 +141,11 @@ func _ID_to_global_position(tile_Vector2:Vector2)->Vector2:
 	return Vector2(nx,ny)
 
 
-func _move_to(to_ID:Vector2, from_this_pos:Vector2=global_position) -> void:
+func _move_to(to_ID:Vector2, from_this_pos=0) -> void:
+	if from_this_pos == 0:
+		from_this_pos = global_position - Vector2(Global.left_margin_board,Global.upper_margin_board)
 	ID = to_ID
-	var new_global_position = _ID_to_global_position(to_ID) - get_parent().position
+	var new_global_position = _ID_to_global_position(to_ID) 
 	Tween_node.interpolate_property(self,"position",from_this_pos, new_global_position, 0.15, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
 	Tween_node.start()
 
@@ -181,7 +183,7 @@ func _process(delta):
 				if get_global_mouse_position().distance_to(mouse_pos_when_was_pressed) >= MIN_DIST_TO_DRAG:
 					has_been_dragged = true
 			else:
-				global_position = g_positon - Vector2( Global.CELL_SIZE/2 , Global.CELL_SIZE/2 )
+				global_position = g_positon - Vector2( Global.CELL_SIZE/2 , Global.CELL_SIZE/2 ) #- Global.left_margin_board
 				if target:
 					if _can_merge(target):
 						target.CanMergeParticles.emitting = true
