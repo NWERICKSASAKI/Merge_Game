@@ -5,6 +5,11 @@
 [x] Criar item gerador
 [x] Criar prompt para inserção de cheats
 [x] Reposicionar o MainBoard
-
-[ ] Adaptar o posicionamento das peças conforme localização do MainBoard
-
+[x] Adaptar o posicionamento das peças conforme localização do MainBoard
+[-] Gerar imagens dos itens
+[-] Inserir imagens dos itens
+[x] Geração de itens aleatórios
+[ ] Display de Ouro, Energia, Level
+[ ] Save/Load
+[ ] Sistema de Energia
+[ ] Sistema de Ouro
