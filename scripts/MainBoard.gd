@@ -7,7 +7,6 @@ var TILES_Y = Global.TILES_Y
 var CELL_SIZE = Global.CELL_SIZE
 
 onready var ItensBoard = $ItensBoard
-onready var ColorGrid = $ItensBoard/ColorGrid
 onready var item_manager = Item_Manager.new()
 onready var player_manager = Player_Manager.new()
 
@@ -27,7 +26,6 @@ func _create_grid():
 			var item = item_scene.instance()
 			_place_itens_in_grid(item,x,y)
 			_load_itens_in_board(item,x,y)
-			_draw_cell_grid(x,y)
 
 
 func _place_itens_in_grid(item,x,y):
@@ -48,15 +46,6 @@ func _load_itens_in_board(item,x,y):
 		item._set_item(1,1)
 	else:
 		item._set_item(0,0)
-
-func _draw_cell_grid(x,y):
-	var cell = ColorRect.new()
-	cell.color = Color(0.2, 0.2, 0.2, 0.5 * ((x+y) % 2))
-	cell.rect_min_size = Vector2(Global.CELL_SIZE, Global.CELL_SIZE)
-	ColorGrid.add_child(cell)
-	cell.rect_position = Vector2(x * Global.CELL_SIZE, y * Global.CELL_SIZE)
-	cell.mouse_filter=Control.MOUSE_FILTER_IGNORE
-
 
 func load_itens_config_in_csv():
 	var file_path = "res://ItensConfig.csv"

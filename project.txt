@@ -10,6 +10,7 @@
 [-] Inserir imagens dos itens
 [x] Particulas para Geradores
 [x] Geração de itens aleatórios
+[x] Imagem do tabuleiro
 [ ] Json para itens 
 
 [ ] Display de Ouro, Energia, Level
