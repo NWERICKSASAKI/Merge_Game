@@ -8,7 +8,10 @@
 [x] Adaptar o posicionamento das peças conforme localização do MainBoard
 [-] Gerar imagens dos itens
 [-] Inserir imagens dos itens
+[x] Particulas para Geradores
 [x] Geração de itens aleatórios
+[ ] Json para itens 
+
 [ ] Display de Ouro, Energia, Level
 [ ] Save/Load
 [ ] Sistema de Energia

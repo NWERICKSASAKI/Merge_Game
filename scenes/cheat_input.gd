@@ -28,7 +28,6 @@ func _enter_on_cheat():
 func _cheat_create_item(word_list):
 	var g = int(word_list[1])
 	var l = int(word_list[2])
-	var empty_slot:Vector2 = item_manager._get_nearest_empty_tile(Vector2(0,0))
-	var empty_item_slot = item_manager._get_item(empty_slot)
-	empty_item_slot._set_item(g,l)
-	print("CREATED A NEW ITEM ON", empty_slot, g,l)
+	var empty_item = item_manager._get_nearest_empty_item(Vector2(0,0))
+	empty_item._set_item(g,l)
+	print("CREATED A NEW ITEM ON", empty_item, g,l)

@@ -32,7 +32,7 @@ func _create_grid():
 
 func _place_itens_in_grid(item,x,y):
 	ItensBoard.add_child(item)
-	item.position = Vector2(x * CELL_SIZE , y * CELL_SIZE ) # + Vector2(CELL_SIZE / 2,+ CELL_SIZE / 2)
+	item.position = Vector2(x * CELL_SIZE , y * CELL_SIZE ) + Vector2(CELL_SIZE / 2,+ CELL_SIZE / 2)
 	item.ID = Vector2(x,y)
 	item.item_manager = item_manager
 	item.itens_config = itens_config

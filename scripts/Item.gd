@@ -17,6 +17,7 @@ var item_manager # atribuido ao ser criado em MainBoard
 var itens_config # atribuido ao ser criado em MainBoard
 var on_animation = false
 
+onready var GeneratorParticles = $GeneratorParticles
 onready var CanMergeParticles = $CanMergeParticles
 onready var MergingParticles = $MergingParticles
 onready var svg = $svg
@@ -38,17 +39,14 @@ func _ready():
 	set_process(false)
 
 func _on_tween_completed(A,B):
-	print(A,B)
 	on_animation = false
 
 func _level_up() -> void:
+	on_animation  = true
 	level += 1
+	_created_item_animation()
 	_update_img()
-	Tween_node.interpolate_property(self, "scale", Vector2(1, 1), Vector2(2, 2), 0.1)  # Aumenta para 2 em 0.5s
-	Tween_node.interpolate_property(self, "scale", Vector2(2, 2), Vector2(1, 1), 0.1)  # Retorna para 1 em 0.5s
-	Tween_node.start()
 	return
-
 
 func _empty_this_tile(old_ID:Vector2=ID) -> void:
 	_move_to(old_ID) # 1) move_to
@@ -75,10 +73,7 @@ func _sell():
 
 func _generate():
 	if item_manager.empty_itens_list: # se houver um espaço vazio disponivel
-		var empty_ID = item_manager._get_nearest_empty_tile(ID)
-		var x = empty_ID[0]
-		var y = empty_ID[1]
-		var item = item_manager.item_list[x][y]
+		var item = item_manager._get_nearest_empty_item(ID)
 
 		var rand_i = randi() % which_itens_can_generate.size()
 		var rand_item = which_itens_can_generate[rand_i]
@@ -87,7 +82,7 @@ func _generate():
 		item._set_item(rand_item_g,rand_item_l)
 
 		var final_pos = _ID_to_global_position(ID)
-		item._move_to(item.ID,final_pos)
+		item._created_item_animation(item.ID,final_pos)
 	else:
 		print("SEM ESPAÇO DISPONÍVEL")
 
@@ -115,6 +110,8 @@ func _update_img():
 	#var t = "g" if generator else "s"
 	var path = "res://assets/itens/" + g + "/" + l + ".svg" 
 	var dir = Directory.new()
+	modulate = Color(1,1,1,1)
+	scale = Vector2(1,1)
 	if dir.file_exists(path):
 		svg.texture = load(path)
 		return true
@@ -124,9 +121,9 @@ func _update_img():
 
 
 func _can_merge(target:Object) -> bool:
-	if target.ID == ID:
+	if target.ID == ID: # caso soltar o item em sua posição original
 		return false
-	elif (target.group == group and target.level == level and target.generator == generator):
+	elif (target.group == group and target.level == level):
 		return true
 	else:
 		return false
@@ -134,7 +131,7 @@ func _can_merge(target:Object) -> bool:
 
 func _merge_with(target:Object):
 	var old_ID = ID
-	_move_to(target.ID)
+	_move_and_merge_to(target.ID)
 	yield(get_tree().create_timer(0.20), "timeout") # sleep
 	target.MergingParticles.emitting=true
 	target._level_up()
@@ -142,49 +139,71 @@ func _merge_with(target:Object):
 
 
 func _mousepos_to_ID(mouse_pos:Vector2) -> Vector2:
-	var nx = int((mouse_pos.x - Global.left_margin_board)/Global.CELL_SIZE)
-	var ny = int((mouse_pos.y- Global.upper_margin_board)/Global.CELL_SIZE)
-	return Vector2(nx,ny)
-
+	return (mouse_pos - Global.margins_board)/Global.CELL_SIZE
 
 func _ID_to_global_position(tile_Vector2:Vector2)->Vector2:
-	var nx = Global.CELL_SIZE * tile_Vector2.x
-	var ny = Global.CELL_SIZE * tile_Vector2.y
-	return Vector2(nx,ny)
-
+	return Global.CELL_SIZE * tile_Vector2 + Global.CELL_OFFSET
 
 func _move_to(to_ID:Vector2, from_this_pos=0) -> void:
 	on_animation = true
 	if from_this_pos is int:
-		from_this_pos = global_position - Vector2(Global.left_margin_board,Global.upper_margin_board)
+		from_this_pos = global_position - Global.margins_board
 	ID = to_ID
 	var new_global_position = _ID_to_global_position(to_ID) 
 	Tween_node.interpolate_property(self,"position",from_this_pos, new_global_position, 0.15, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
 	Tween_node.start()
 
+func _move_and_merge_to(to_ID:Vector2) -> void:
+	on_animation = true
+	var from_this_pos = global_position - Global.margins_board
+	ID = to_ID
+	var new_global_position = _ID_to_global_position(to_ID)
+	Tween_node.interpolate_property(self,"position",from_this_pos, new_global_position, 0.2, Tween.TRANS_QUAD, Tween.EASE_IN)
+	Tween_node.interpolate_property(self,"scale",Vector2(1,1),Vector2(0,0), 0.2, Tween.TRANS_QUAD, Tween.EASE_IN)
+	Tween_node.interpolate_property(self,"modulate",Color(1,1,1,1),Color(1,1,1,0), 0.2, Tween.TRANS_QUAD, Tween.EASE_IN)
+	Tween_node.start()
+
+func _created_item_animation(to_ID:Vector2=ID, from_this_pos=0):
+	Tween_node.stop_all()
+	if from_this_pos is int: #  se nao definido uma posicao inicial
+		from_this_pos = global_position - Global.margins_board # sua posição atual
+	var final_global_position = _ID_to_global_position(to_ID)
+	if final_global_position == from_this_pos: # se pos inicial = pos final
+		pass
+	else:
+		on_animation = true
+		Tween_node.interpolate_property(self,"position",from_this_pos, final_global_position, 0.2, Tween.TRANS_QUAD, Tween.EASE_IN)
+		ID = to_ID
+	var S = 1.5
+	var MAX_SIZE = Vector2(S,S)
+	Tween_node.interpolate_property(self, "modulate", Color(1,1,1,0.3), Color(1,1,1,1), 0.2, Tween.TRANS_QUAD, Tween.EASE_IN)  # Aumenta para 2 em 0.5s
+	Tween_node.interpolate_property(self, "scale", MAX_SIZE, Vector2(1, 1), 0.2, Tween.TRANS_QUAD, Tween.EASE_IN)  # Retorna para 1 em 0.5s
+	Tween_node.start()
+	return
+
 func _update_which_itens_can_generate(new_group , new_level):
 	if new_group == 0:
 		which_itens_can_generate = []
 		generator = false
-		return
-	var can_generate_list = []
-	var string_of_itens = itens_config[new_group][new_level]
-	print("string_of_itens",string_of_itens)
-	if not string_of_itens.empty():
-		string_of_itens = string_of_itens.split('-')
-		for itens in string_of_itens:
-			can_generate_list.append(itens.split('.'))
-			print('appendado',string_of_itens.empty())
-		generator = true
 	else:
-		generator = false
-	which_itens_can_generate = can_generate_list
+		var can_generate_list = []
+		var string_of_itens = itens_config[new_group][new_level]
+		if not string_of_itens.empty():
+			string_of_itens = string_of_itens.split('-')
+			for itens in string_of_itens:
+				can_generate_list.append(itens.split('.'))
+			generator = true
+		else:
+			generator = false
+		which_itens_can_generate = can_generate_list
+	GeneratorParticles.visible = generator
+	return
 
 
 ##################################################################
 
 func _input_event(viewport, event, shape_idx):
-	if event is InputEventMouseButton:
+	if event is InputEventMouseButton and not on_animation:
 		if event.pressed:
 			if !mouse_down_on_item:
 				mouse_pos_when_was_pressed = get_global_mouse_position()
@@ -205,25 +224,25 @@ func _input_event(viewport, event, shape_idx):
 
 
 func _process(delta):
-	if on_animation == false:
-		if tile_has_item:
-			var mouse_pos = get_global_mouse_position()
-			var g_positon = mouse_pos# - Vector2( Global.CELL_SIZE/2 , Global.CELL_SIZE/2 )
-			var tile_above_index = _mousepos_to_ID(g_positon)
-			var target = item_manager._get_item(tile_above_index)
-			if mouse_down_on_item:
-				if has_been_dragged == false:
-					if get_global_mouse_position().distance_to(mouse_pos_when_was_pressed) >= MIN_DIST_TO_DRAG:
-						has_been_dragged = true
-				else:
-					global_position = g_positon - Vector2( Global.CELL_SIZE/2 , Global.CELL_SIZE/2 ) #- Global.left_margin_board
-					if target:
-						if _can_merge(target):
-							target.CanMergeParticles.emitting = true
+#	if not on_animation:
+	if tile_has_item:
+		var mouse_pos = get_global_mouse_position()
+		var g_positon = mouse_pos
+		var tile_above_index = _mousepos_to_ID(g_positon)
+		var target = item_manager._get_item(tile_above_index)
+		if mouse_down_on_item:
+			if has_been_dragged == false:
+				if get_global_mouse_position().distance_to(mouse_pos_when_was_pressed) >= MIN_DIST_TO_DRAG:
+					has_been_dragged = true
 			else:
-				set_process(false)
-				if _can_merge(target):
-					_merge_with(target)
-				else:
-					_swap_with(target)
-#	pass
+				global_position = g_positon
+				if target:
+					if _can_merge(target):
+						target.CanMergeParticles.emitting = true
+		else:
+			set_process(false)
+			if _can_merge(target):
+				_merge_with(target)
+			else:
+				_swap_with(target)
+

@@ -36,13 +36,18 @@ func _update_itens_in_empty_list_after_swap(obj1,obj2):
 func _get_nearest_empty_tile(ID:Vector2) -> Vector2:
 	var nearest_ID:Vector2
 	var nearest_dist = 99
+	var nearest_item
 	for itens in empty_itens_list:
 		var new_dist = ID.distance_to(itens)
 		if new_dist < nearest_dist:
 			nearest_ID = itens
 			nearest_dist = new_dist
+			nearest_item = itens
 	return nearest_ID
 
+func _get_nearest_empty_item(ID:Vector2 = Vector2(0,0)) -> Object:
+	var empty_ID = _get_nearest_empty_tile(ID)
+	return _get_item(empty_ID)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 #func _process(delta):
