@@ -12,9 +12,11 @@
 [x] Geração de itens aleatórios
 [x] Imagem do tabuleiro
 [x] Centralização do layout para expansão de janela
+[x] Item selecionado fica a frente de todos
 [ ] Json para itens 
 
 [ ] Display de Ouro, Energia, Level
 [ ] Save/Load
 [ ] Sistema de Energia
 [ ] Sistema de Ouro
+[ ] Venda/Exclusão de Item

@@ -7,7 +7,6 @@ var level = 1
 var mouse_down_on_item = false
 var ID # vector2
 var tile_has_item = false
-var selected = false
 var generator = false
 var which_itens_can_generate = []
 var max_level = false
@@ -210,18 +209,19 @@ func _input_event(viewport, event, shape_idx):
 			if !mouse_down_on_item:
 				mouse_pos_when_was_pressed = Get_parent.to_local(get_global_mouse_position())
 			item_manager.selected_item_ID = ID
+			z_index = 1
 			mouse_down_on_item = true
 			set_process(true)
-			selected = item_manager.selected_item_ID
 			
 			# TODO - item pickado esteja sempre na frente de todos
-		elif not event.pressed and item_manager.selected_item_ID == ID:
+		elif not event.pressed:
+			z_index = 0
 			has_been_dragged = false
 			mouse_down_on_item = false
-			var pos = position #- Vector2(Global.left_margin_board, Global.upper_margin_board)
-			if pos == _ID_to_pos(ID):
-				if generator:
-					_generate()
+			if item_manager.selected_item_ID == ID:
+				if position == _ID_to_pos(ID):
+					if generator:
+						_generate()
 	get_tree().set_input_as_handled()
 
 
