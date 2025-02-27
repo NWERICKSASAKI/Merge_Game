@@ -23,14 +23,12 @@ func _update_item_list(obj1,obj2) -> void:
 
 func _update_itens_in_empty_list_after_swap(obj1,obj2):
 	if obj1.tile_has_item==false or obj2.tile_has_item==false: # swap with empty tile
-		var ID1 = obj1.ID # had the item - now is empty
+		var ID1 = obj1.ID # had the item ( now is empty )
 		var ID2 = obj2.ID # have the item
 		# registering the empty tile
 		empty_itens_list.erase(ID1)
-		print('empty_itens_list.erase(ID2)',ID1)
 		# registering the item tile
 		empty_itens_list.append(ID2)
-		print('empty_itens_list.append',ID2)
 		return
 
 func _get_nearest_empty_tile(ID:Vector2) -> Vector2:

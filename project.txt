@@ -11,6 +11,7 @@
 [x] Particulas para Geradores
 [x] Geração de itens aleatórios
 [x] Imagem do tabuleiro
+[x] Centralização do layout para expansão de janela
 [ ] Json para itens 
 
 [ ] Display de Ouro, Energia, Level

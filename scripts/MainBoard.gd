@@ -1,4 +1,4 @@
-extends Node2D
+extends Control
 
 var item_scene = preload("res://scenes/Item.tscn")  # Carrega a peça
 var itens_config = []
@@ -13,10 +13,9 @@ onready var player_manager = Player_Manager.new()
 func _ready():
 	itens_config = load_itens_config_in_csv()
 	_create_grid()
-
 	$ItensBoard.position.x = Global.left_margin_board
 	$ItensBoard.position.y = Global.upper_margin_board
-	$cheat_input.item_manager = item_manager
+	get_parent().get_node("cheat_input").item_manager = item_manager
 
 func _create_grid():
 	for x in range(TILES_X):

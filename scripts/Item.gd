@@ -1,6 +1,6 @@
 extends Area2D
 
-const MIN_DIST_TO_DRAG = 30
+const MIN_DIST_TO_DRAG = 20
 
 var group = 0
 var level = 1
@@ -22,6 +22,7 @@ onready var CanMergeParticles = $CanMergeParticles
 onready var MergingParticles = $MergingParticles
 onready var svg = $svg
 onready var Tween_node = $Tween_node
+onready var Get_parent = get_parent()
 
 
 func _ready():
@@ -81,7 +82,7 @@ func _generate():
 		var rand_item_l = int(rand_item[1])
 		item._set_item(rand_item_g,rand_item_l)
 
-		var final_pos = _ID_to_global_position(ID)
+		var final_pos = _ID_to_pos(ID)
 		item._created_item_animation(item.ID,final_pos)
 	else:
 		print("SEM ESPAÇO DISPONÍVEL")
@@ -107,7 +108,6 @@ func _set_item(new_group:int, new_level:int) -> void:
 func _update_img():
 	var g = str(group).pad_zeros(2)
 	var l = str(level).pad_zeros(2)
-	#var t = "g" if generator else "s"
 	var path = "res://assets/itens/" + g + "/" + l + ".svg" 
 	var dir = Directory.new()
 	modulate = Color(1,1,1,1)
@@ -139,25 +139,27 @@ func _merge_with(target:Object):
 
 
 func _mousepos_to_ID(mouse_pos:Vector2) -> Vector2:
-	return (mouse_pos - Global.margins_board)/Global.CELL_SIZE
+	var v = (mouse_pos - Global.margins_board)/Global.CELL_SIZE
+	var rounded_v = Vector2( round(v.x) , round(v.y) )
+	return rounded_v
 
-func _ID_to_global_position(tile_Vector2:Vector2)->Vector2:
+func _ID_to_pos(tile_Vector2:Vector2)->Vector2:
 	return Global.CELL_SIZE * tile_Vector2 + Global.CELL_OFFSET
 
 func _move_to(to_ID:Vector2, from_this_pos=0) -> void:
 	on_animation = true
 	if from_this_pos is int:
-		from_this_pos = global_position - Global.margins_board
+		from_this_pos = position#global_position - Global.margins_board
 	ID = to_ID
-	var new_global_position = _ID_to_global_position(to_ID) 
+	var new_global_position = _ID_to_pos(to_ID) 
 	Tween_node.interpolate_property(self,"position",from_this_pos, new_global_position, 0.15, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
 	Tween_node.start()
 
 func _move_and_merge_to(to_ID:Vector2) -> void:
 	on_animation = true
-	var from_this_pos = global_position - Global.margins_board
+	var from_this_pos = position#global_position - Global.margins_board
 	ID = to_ID
-	var new_global_position = _ID_to_global_position(to_ID)
+	var new_global_position = _ID_to_pos(to_ID)
 	Tween_node.interpolate_property(self,"position",from_this_pos, new_global_position, 0.2, Tween.TRANS_QUAD, Tween.EASE_IN)
 	Tween_node.interpolate_property(self,"scale",Vector2(1,1),Vector2(0,0), 0.2, Tween.TRANS_QUAD, Tween.EASE_IN)
 	Tween_node.interpolate_property(self,"modulate",Color(1,1,1,1),Color(1,1,1,0), 0.2, Tween.TRANS_QUAD, Tween.EASE_IN)
@@ -166,8 +168,8 @@ func _move_and_merge_to(to_ID:Vector2) -> void:
 func _created_item_animation(to_ID:Vector2=ID, from_this_pos=0):
 	Tween_node.stop_all()
 	if from_this_pos is int: #  se nao definido uma posicao inicial
-		from_this_pos = global_position - Global.margins_board # sua posição atual
-	var final_global_position = _ID_to_global_position(to_ID)
+		from_this_pos = position#global_position - Global.margins_board # sua posição atual
+	var final_global_position = _ID_to_pos(to_ID)
 	if final_global_position == from_this_pos: # se pos inicial = pos final
 		pass
 	else:
@@ -206,18 +208,18 @@ func _input_event(viewport, event, shape_idx):
 	if event is InputEventMouseButton and not on_animation:
 		if event.pressed:
 			if !mouse_down_on_item:
-				mouse_pos_when_was_pressed = get_global_mouse_position()
+				mouse_pos_when_was_pressed = Get_parent.to_local(get_global_mouse_position())
 			item_manager.selected_item_ID = ID
 			mouse_down_on_item = true
 			set_process(true)
-			var selected = item_manager.selected_item_ID
+			selected = item_manager.selected_item_ID
 			
 			# TODO - item pickado esteja sempre na frente de todos
 		elif not event.pressed and item_manager.selected_item_ID == ID:
 			has_been_dragged = false
 			mouse_down_on_item = false
-			var pos = global_position - Vector2(Global.left_margin_board, Global.upper_margin_board)
-			if pos == _ID_to_global_position(ID):
+			var pos = position #- Vector2(Global.left_margin_board, Global.upper_margin_board)
+			if pos == _ID_to_pos(ID):
 				if generator:
 					_generate()
 	get_tree().set_input_as_handled()
@@ -226,16 +228,15 @@ func _input_event(viewport, event, shape_idx):
 func _process(delta):
 #	if not on_animation:
 	if tile_has_item:
-		var mouse_pos = get_global_mouse_position()
-		var g_positon = mouse_pos
-		var tile_above_index = _mousepos_to_ID(g_positon)
+		var mouse_pos = Get_parent.to_local(get_global_mouse_position())
+		var tile_above_index = _mousepos_to_ID(mouse_pos)
 		var target = item_manager._get_item(tile_above_index)
 		if mouse_down_on_item:
 			if has_been_dragged == false:
-				if get_global_mouse_position().distance_to(mouse_pos_when_was_pressed) >= MIN_DIST_TO_DRAG:
+				if mouse_pos.distance_to(mouse_pos_when_was_pressed) >= MIN_DIST_TO_DRAG:
 					has_been_dragged = true
 			else:
-				global_position = g_positon
+				position = mouse_pos
 				if target:
 					if _can_merge(target):
 						target.CanMergeParticles.emitting = true
